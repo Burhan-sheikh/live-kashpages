@@ -1,0 +1,59 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidImageSize() {
+      // Max 5MB for images
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // User profile images
+    match /users/{userId}/profile/{filename} {
+      allow read: if true;
+      allow write: if isOwner(userId) && 
+                      isImage() && 
+                      isValidImageSize();
+      allow delete: if isOwner(userId);
+    }
+
+    // Shop cover images
+    match /shops/{shopId}/cover/{filename} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      isImage() && 
+                      isValidImageSize();
+      allow delete: if isAuthenticated();
+    }
+
+    // Shop gallery images
+    match /shops/{shopId}/gallery/{filename} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      isImage() && 
+                      isValidImageSize();
+      allow delete: if isAuthenticated();
+    }
+
+    // SEO images (og:image, favicon)
+    match /shops/{shopId}/seo/{filename} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      isImage() && 
+                      isValidImageSize();
+      allow delete: if isAuthenticated();
+    }
+  }
+}
